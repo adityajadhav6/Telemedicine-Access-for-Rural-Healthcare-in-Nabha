@@ -1,0 +1,932 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Telemedicine Demo — Nabha Rural Health</title>
+    <style>
+      :root {
+        --bg: #f6fafb;
+        --card: #ffffff;
+        --accent: #0b6efd;
+        --muted: #556;
+        --success: #138000;
+        --danger: #d32f2f;
+        --glass: rgba(255, 255, 255, 0.7);
+        font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto,
+          "Helvetica Neue", Arial;
+      }
+
+      body {
+        margin: 0;
+        background: linear-gradient(180deg, #e9f3ff 0%, var(--bg) 100%);
+        min-height: 100vh;
+        display: flex;
+        justify-content: center;
+        align-items: flex-start;
+        padding: 28px;
+        color: #222;
+        -webkit-font-smoothing: antialiased;
+        -moz-osx-font-smoothing: grayscale;
+      }
+
+      .container {
+        width: 100%;
+        max-width: 1000px;
+        display: grid;
+        grid-template-columns: 1fr 360px;
+        gap: 18px;
+        align-items: start;
+      }
+
+      header {
+        grid-column: 1 / -1;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 8px;
+      }
+
+      h1 {
+        font-size: 20px;
+        margin: 0;
+        color: var(--accent);
+      }
+      p.lead {
+        margin: 4px 0 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .card {
+        background: var(--card);
+        border-radius: 14px;
+        box-shadow: 0 6px 20px rgba(28, 45, 80, 0.06);
+        padding: 16px;
+        overflow: hidden;
+      }
+
+      form .row {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      label {
+        font-size: 13px;
+        color: var(--muted);
+        display: block;
+        margin-bottom: 6px;
+      }
+      input[type="text"],
+      textarea,
+      select {
+        width: 100%;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid #e6eefc;
+        background: linear-gradient(
+          180deg,
+          rgba(250, 252, 255, 1),
+          rgba(245, 249, 255, 1)
+        );
+        font-size: 14px;
+        resize: vertical;
+        box-sizing: border-box;
+      }
+      textarea {
+        min-height: 90px;
+      }
+
+      button {
+        background: var(--accent);
+        color: white;
+        border: 0;
+        padding: 10px 12px;
+        border-radius: 10px;
+        cursor: pointer;
+        font-weight: 600;
+        box-shadow: 0 6px 14px rgba(11, 110, 253, 0.14);
+      }
+      button.ghost {
+        background: transparent;
+        color: var(--accent);
+        box-shadow: none;
+        border: 1px solid #e7f0ff;
+        font-weight: 600;
+      }
+      .muted {
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .status {
+        margin-top: 10px;
+        padding: 10px;
+        border-radius: 8px;
+        font-size: 14px;
+      }
+
+      .status.info {
+        background: #f0f7ff;
+        color: #083b66;
+      }
+      .status.error {
+        background: #fff0f0;
+        color: var(--danger);
+      }
+      .status.success {
+        background: #eefdf0;
+        color: var(--success);
+      }
+
+      .aside {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        position: sticky;
+        top: 28px;
+        align-self: start;
+      }
+
+      .records {
+        max-height: 360px;
+        overflow: auto;
+        padding: 8px;
+        gap: 8px;
+        display: flex;
+        flex-direction: column;
+      }
+      .record {
+        border-radius: 10px;
+        background: linear-gradient(180deg, #fbfdff, #fff);
+        padding: 10px;
+        font-size: 13px;
+        border: 1px solid #f1f6ff;
+      }
+      .small {
+        font-size: 12px;
+        color: var(--muted);
+      }
+
+      .langselect {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      .langselect button {
+        padding: 6px 8px;
+        font-size: 13px;
+        border-radius: 8px;
+      }
+
+      .videoModal {
+        position: fixed;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(0, 0, 0, 0.45);
+        z-index: 9999;
+        visibility: hidden;
+        opacity: 0;
+        transition: all 0.15s ease;
+      }
+      .videoModal.show {
+        visibility: visible;
+        opacity: 1;
+      }
+      .videoBox {
+        width: min(720px, 95%);
+        background: white;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 18px 60px rgba(0, 0, 0, 0.25);
+      }
+      .videoBox h3 {
+        margin: 0 0 8px;
+      }
+      .videoFake {
+        height: 340px;
+        background: #000;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: white;
+        font-weight: 700;
+        font-size: 14px;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        margin-top: 10px;
+        justify-content: flex-end;
+      }
+
+      @media (max-width: 900px) {
+        .container {
+          grid-template-columns: 1fr;
+          padding-bottom: 40px;
+        }
+        .aside {
+          position: relative;
+          top: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container" role="main">
+      <header>
+        <div>
+          <h1 id="appTitle">Telemedicine Demo — Nabha</h1>
+          <p class="lead" id="appTag">
+            Low-bandwidth, offline-friendly telehealth prototype
+          </p>
+        </div>
+        <div class="langselect card" style="display: flex; align-items: center">
+          <label for="lang" class="small" style="margin-right: 8px"
+            >Language</label
+          >
+          <select id="lang" aria-label="Choose language">
+            <option value="en">English</option>
+            <option value="hi">हिन्दी</option>
+            <option value="pa">ਪੰਜਾਬੀ</option>
+          </select>
+        </div>
+      </header>
+
+      <!-- LEFT: Main app -->
+      <section class="card" aria-labelledby="mainFormTitle">
+        <h2 id="mainFormTitle" style="margin-top: 0">Patient Check-in</h2>
+
+        <form
+          id="patientForm"
+          onsubmit="return false"
+          autocomplete="off"
+          aria-describedby="formDesc"
+        >
+          <div id="formDesc" class="small muted">
+            Fill patient name and symptoms. Use "Check Symptoms" to run the
+            AI-checker (mock).
+          </div>
+
+          <div class="row" style="margin-top: 12px">
+            <div style="flex: 1">
+              <label for="patientName" id="lblName">Patient name</label>
+              <input
+                type="text"
+                id="patientName"
+                placeholder="e.g., Ram Kumar"
+                required
+              />
+            </div>
+
+            <div style="width: 150px">
+              <label for="village" id="lblVillage">Village</label>
+              <input type="text" id="village" placeholder="e.g., Bindra" />
+            </div>
+          </div>
+
+          <div style="margin-top: 8px">
+            <label for="symptoms" id="lblSymptoms">Symptoms (brief)</label>
+            <textarea
+              id="symptoms"
+              placeholder="e.g., fever, cough, stomach pain"
+            ></textarea>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              gap: 8px;
+              margin-top: 12px;
+              align-items: center;
+            "
+          >
+            <button id="checkBtn" type="button">Check Symptoms</button>
+            <button id="saveBtn" class="ghost" type="button">
+              Save Record
+            </button>
+            <button id="videoBtn" class="ghost" type="button">
+              Start Video Call
+            </button>
+            <div style="flex: 1"></div>
+            <input
+              type="text"
+              id="medSearch"
+              placeholder="Search medicine availability"
+              aria-label="medicine search"
+              style="width: 220px"
+            />
+            <button id="checkMedBtn" class="ghost" type="button">
+              Check Medicine
+            </button>
+          </div>
+
+          <div id="resultArea" style="margin-top: 12px"></div>
+        </form>
+
+        <hr
+          style="margin: 16px 0; border: none; height: 1px; background: #f0f6ff"
+        />
+
+        <section aria-labelledby="ehrTitle">
+          <h3 id="ehrTitle" style="margin-top: 0">
+            Digital Health Records (Local)
+          </h3>
+          <div class="small muted">
+            Records are stored in your browser (offline). Use
+            <em>Save Record</em> after checking symptoms.
+          </div>
+          <div
+            style="
+              margin-top: 8px;
+              display: flex;
+              gap: 8px;
+              align-items: center;
+            "
+          >
+            <button id="exportBtn" class="ghost" type="button">
+              Export Records (JSON)
+            </button>
+            <button id="clearBtn" class="ghost" type="button">
+              Clear Records
+            </button>
+          </div>
+
+          <div id="records" class="records" style="margin-top: 10px"></div>
+        </section>
+      </section>
+
+      <!-- RIGHT: Aside -->
+      <aside class="aside">
+        <div class="card">
+          <h3 style="margin-top: 0">Pharmacies Nearby (sample)</h3>
+          <p class="small muted">
+            Search medicine to get live-like availability.
+          </p>
+          <ul
+            id="pharmList"
+            class="small"
+            style="padding-left: 16px; margin: 8px 0 0"
+          ></ul>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top: 0">Status</h3>
+          <div id="statusBox" class="status info">Idle</div>
+          <div style="margin-top: 8px">
+            <strong>Last action:</strong>
+            <div id="lastAction" class="small muted">—</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <h3 style="margin-top: 0">Usage Tips</h3>
+          <ol style="padding-left: 16px; margin: 6px 0 0; font-size: 13px">
+            <li>Type symptoms in short comma-separated words.</li>
+            <li>Try "fever", "cough", "headache", "stomach pain".</li>
+            <li>Language setting only localizes UI (prototype).</li>
+          </ol>
+        </div>
+      </aside>
+    </div>
+
+    <!-- Video modal -->
+    <div id="videoModal" class="videoModal" role="dialog" aria-hidden="true">
+      <div class="videoBox" role="document">
+        <h3 id="videoTitle">Video Consultation</h3>
+        <div class="videoFake" id="videoFake">Connecting to doctor...</div>
+        <div class="controls">
+          <button id="endCall">End Call</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      /************************************************************************
+       * Telemedicine Demo - core logic
+       * - Mock async "APIs" use Promises + setTimeout to demonstrate async/await
+       * - Error handling uses try...catch and always executes a finally block
+       * - Records saved to localStorage (offline-first)
+       ************************************************************************/
+
+      // ----------------------------
+      // Sample Data (pharmacies + medicines)
+      // ----------------------------
+      const pharmacies = [
+        {
+          name: "Nabha Meds",
+          village: "Nabha",
+          inventory: { paracetamol: 120, "cough-syrup": 20, amoxicillin: 10 },
+        },
+        {
+          name: "Rural Pharmacy",
+          village: "Bindra",
+          inventory: { paracetamol: 0, ibuprofen: 50, amoxicillin: 5 },
+        },
+        {
+          name: "Sukhdev Drugs",
+          village: "Ramanpur",
+          inventory: { paracetamol: 40, "cough-syrup": 0, antacid: 15 },
+        },
+      ];
+
+      // symptom -> likely condition mapping (very simplified for demo)
+      const symptomDB = {
+        fever: {
+          condition: "Possible Fever / Infection",
+          advice: "Hydration, paracetamol if high temp, see doctor if > 2 days",
+        },
+        cough: {
+          condition: "Upper respiratory / cough",
+          advice: "Warm fluids, cough syrup; if breathless, seek care",
+        },
+        headache: {
+          condition: "Tension or Migraine",
+          advice: "Rest, paracetamol/ibuprofen",
+        },
+        "stomach pain": {
+          condition: "Gastrointestinal issue",
+          advice: "Avoid solid food, seek care if severe or persistent",
+        },
+        vomiting: {
+          condition: "Possible Gastroenteritis",
+          advice: "Oral rehydration, urgent care if severe",
+        },
+      };
+
+      // translation snippets (prototype)
+      const i18n = {
+        en: {
+          appTitle: "Telemedicine Demo — Nabha",
+          appTag: "Low-bandwidth, offline-friendly telehealth prototype",
+          name: "Patient name",
+          village: "Village",
+          symptoms: "Symptoms (brief)",
+          checkSymptoms: "Check Symptoms",
+          saveRecord: "Save Record",
+          startVideo: "Start Video Call",
+          searchMed: "Search medicine availability",
+          checkMed: "Check Medicine",
+          records: "Digital Health Records (Local)",
+          tips: "Usage Tips",
+          statusIdle: "Idle",
+          connecting: "Connecting...",
+        },
+        hi: {
+          appTitle: "टेलीमेडिसिन डेमो — नाभा",
+          appTag: "कम बैंडविड्थ के लिए अनुकूल, ऑफ़लाइन-फ्रेंडली प्रोटोटाइप",
+          name: "रोगी का नाम",
+          village: "गाँव",
+          symptoms: "लक्षण (संक्षेप में)",
+          checkSymptoms: "लक्षण जाँचें",
+          saveRecord: "रिकॉर्ड सहेजें",
+          startVideo: "वीडियो कॉल प्रारंभ करें",
+          searchMed: "दवा उपलब्धता खोजें",
+          checkMed: "दवा जाँचें",
+          records: "डिजिटल हेल्थ रिकॉर्ड (लोकल)",
+          tips: "उपयोग युक्तियाँ",
+          statusIdle: "विराम",
+          connecting: "जोड़ रहे हैं...",
+        },
+        pa: {
+          appTitle: "ਟੈਲੀਮੀਡੀਸਨ ਡੈਮੋ — ਨਾਭਾ",
+          appTag: "ਘੱਟ ਬੈਂਡਵਿਡਥ ਲਈ ਅਨੁਕੂਲ, ਆਫਲਾਈਨ ਫਰੈਂਡਲੀ ਪ੍ਰੋਟੋਟਾਈਪ",
+          name: "ਮਰੀਜ਼ ਦਾ ਨਾਮ",
+          village: "ਪਿੰਡ",
+          symptoms: "ਲੱਛਣ (ਸੰਖੇਪ)",
+          checkSymptoms: "ਲੱਛਣ ਜਾਂਚੋ",
+          saveRecord: "ਰਿਕਾਰਡ ਸੰਭਾਲੋ",
+          startVideo: "ਵੀਡੀਓ ਕਾਲ ਸ਼ੁਰੂ ਕਰੋ",
+          searchMed: "ਦਵਾ ਉਪਲਬਧਤਾ ਖੋਜੋ",
+          checkMed: "ਦਵਾ ਜਾਂਚੋ",
+          records: "ਡਿਜੀਟਲ ਹੈਲਥ ਰਿਕਾਰਡ (ਲੋਕਲ)",
+          tips: "ਵਰਤੋਂ ਲਈ ਸੁਝਾਅ",
+          statusIdle: "ਸਕਤ",
+          connecting: "ਜੁੜ ਰਿਹਾ ਹੈ...",
+        },
+      };
+
+      // ----------------------------
+      // Utilities
+      // ----------------------------
+      const $ = (id) => document.getElementById(id);
+
+      // normalize keys (case-insensitive)
+      function normKey(s) {
+        return (s || "").toString().trim().toLowerCase();
+      }
+
+      // show status UI
+      function setStatus(text, variant = "info") {
+        const box = $("statusBox");
+        box.className =
+          "status " +
+          (variant === "error"
+            ? "error"
+            : variant === "success"
+            ? "success"
+            : "info");
+        box.textContent = text;
+        $("lastAction").textContent = text;
+      }
+
+      // ----------------------------
+      // Mock async "Symptom Checker API"
+      // Demonstrates async/await + try/catch/finally
+      // ----------------------------
+      function mockSymptomAPI(symptomList) {
+        // returns a promise that resolves with analysis after a delay or rejects on invalid input
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            if (
+              !symptomList ||
+              !Array.isArray(symptomList) ||
+              symptomList.length === 0
+            ) {
+              reject("No symptoms provided");
+              return;
+            }
+
+            const analysis = symptomList.map((s) => {
+              const key = normKey(s);
+              if (symptomDB[key]) {
+                return { symptom: s, ...symptomDB[key] };
+              } else {
+                return {
+                  symptom: s,
+                  condition: "Unknown",
+                  advice: "Recommend doctor consultation",
+                };
+              }
+            });
+
+            // 8% chance to simulate network error
+            if (Math.random() < 0.08)
+              reject("Network error while checking symptoms");
+            else resolve({ analysis, timestamp: new Date().toISOString() });
+          }, 900 + Math.random() * 600);
+        });
+      }
+
+      // Async wrapper that uses try...catch...finally
+      async function checkSymptomsAsync(symptomText) {
+        const uiResult = $("resultArea");
+        uiResult.innerHTML = `<div class="status info">Checking symptoms...</div>`;
+        setStatus("Checking symptoms...");
+
+        try {
+          // parse symptoms by comma
+          const list = symptomText
+            .split(",")
+            .map((s) => s.trim())
+            .filter(Boolean);
+          const res = await mockSymptomAPI(list); // await the mock API
+          // build friendly output
+          const lines = res.analysis.map(
+            (a) =>
+              `<strong>${escapeHtml(a.symptom)}</strong>: ${escapeHtml(
+                a.condition
+              )} — ${escapeHtml(a.advice)}`
+          );
+          uiResult.innerHTML = `<div class="status success"><strong>Analysis:</strong><br>${lines.join(
+            "<br>"
+          )}</div>`;
+          setStatus("Symptom analysis completed", "success");
+          console.log("Symptom check result:", res);
+          return res;
+        } catch (err) {
+          uiResult.innerHTML = `<div class="status error">Failed to check symptoms: ${escapeHtml(
+            err
+          )}</div>`;
+          setStatus("Failed to check symptoms", "error");
+          console.error("checkSymptomsAsync error:", err);
+          throw err; // rethrow so caller can handle if needed
+        } finally {
+          // always executed
+          console.log(
+            "Weather check completed (demo pattern) — symptom check finally executed."
+          );
+        }
+      }
+
+      // ----------------------------
+      // Mock async "Medicine availability API"
+      // ----------------------------
+      function mockMedicineAPI(medName) {
+        return new Promise((resolve, reject) => {
+          setTimeout(() => {
+            if (!medName) {
+              reject("Medicine name missing");
+              return;
+            }
+            const key = normKey(medName);
+            const matches = pharmacies
+              .map((p) => {
+                return {
+                  name: p.name,
+                  village: p.village,
+                  quantity: p.inventory[key] || 0,
+                };
+              })
+              .filter(Boolean);
+            // small chance to simulate service hiccup
+            if (Math.random() < 0.06) reject("Service unavailable (try again)");
+            else
+              resolve({
+                medicine: medName,
+                matches,
+                timestamp: new Date().toISOString(),
+              });
+          }, 600 + Math.random() * 600);
+        });
+      }
+
+      async function checkMedicineAsync(medName) {
+        setStatus("Checking medicine availability...");
+        try {
+          const res = await mockMedicineAPI(medName);
+          if (!res.matches || res.matches.length === 0) {
+            $(
+              "resultArea"
+            ).innerHTML = `<div class="status error">No pharmacy data available.</div>`;
+            setStatus("No pharmacy data", "error");
+            return res;
+          }
+
+          // present matches
+          const lines = res.matches.map(
+            (m) =>
+              `<div style="margin-bottom:6px"><strong>${escapeHtml(
+                m.name
+              )}</strong> (${escapeHtml(m.village)}) — ${
+                m.quantity > 0
+                  ? m.quantity + " in stock"
+                  : "<span style='color:#c33'>Out of stock</span>"
+              }</div>`
+          );
+          $(
+            "resultArea"
+          ).innerHTML = `<div class="status info"><strong>Availability for ${escapeHtml(
+            res.medicine
+          )}:</strong><br>${lines.join("")}</div>`;
+          setStatus("Checked medicine availability", "success");
+          console.log("Medicine check:", res);
+          return res;
+        } catch (err) {
+          $(
+            "resultArea"
+          ).innerHTML = `<div class="status error">Failed to check medicine: ${escapeHtml(
+            err
+          )}</div>`;
+          setStatus("Medicine check failed", "error");
+          console.error("checkMedicineAsync error:", err);
+          throw err;
+        } finally {
+          console.log("Medicine check finally executed.");
+        }
+      }
+
+      // ----------------------------
+      // Local EHR storage
+      // ----------------------------
+      const STORAGE_KEY = "telemed_demo_records_v1";
+
+      function loadRecords() {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          return raw ? JSON.parse(raw) : [];
+        } catch (e) {
+          console.warn("Failed load records", e);
+          return [];
+        }
+      }
+
+      function saveRecords(records) {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(records || []));
+      }
+
+      function addRecord(record) {
+        const arr = loadRecords();
+        arr.unshift(record);
+        // keep only last 200
+        saveRecords(arr.slice(0, 200));
+        renderRecords();
+      }
+
+      function clearRecords() {
+        localStorage.removeItem(STORAGE_KEY);
+        renderRecords();
+      }
+
+      function exportRecords() {
+        const data = loadRecords();
+        const blob = new Blob([JSON.stringify(data, null, 2)], {
+          type: "application/json",
+        });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "telemed_records.json";
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        setStatus("Records exported");
+      }
+
+      function renderRecords() {
+        const div = $("records");
+        const arr = loadRecords();
+        if (!arr || arr.length === 0) {
+          div.innerHTML = `<div class="muted">No records saved yet.</div>`;
+          return;
+        }
+        div.innerHTML = "";
+        arr.forEach((r) => {
+          const rec = document.createElement("div");
+          rec.className = "record";
+          rec.innerHTML = `<div style="display:flex;justify-content:space-between">
+            <div><strong>${escapeHtml(
+              r.name
+            )}</strong> <span class="small muted">(${escapeHtml(
+            r.village || "—"
+          )})</span></div>
+            <div class="small muted">${new Date(r.time).toLocaleString()}</div>
+          </div>
+          <div class="small" style="margin-top:6px"><strong>Symptoms:</strong> ${escapeHtml(
+            r.symptoms || "—"
+          )}</div>
+          <div class="small" style="margin-top:6px"><strong>Analysis:</strong> ${escapeHtml(
+            r.analysisSummary || "—"
+          )}</div>`;
+          div.appendChild(rec);
+        });
+      }
+
+      // ----------------------------
+      // UI wiring
+      // ----------------------------
+      function escapeHtml(s) {
+        if (s === null || s === undefined) return "";
+        return s
+          .toString()
+          .replaceAll("&", "&amp;")
+          .replaceAll("<", "&lt;")
+          .replaceAll(">", "&gt;")
+          .replaceAll('"', "&quot;");
+      }
+
+      // Populate pharmacy list UI
+      function renderPharmList() {
+        const ul = $("pharmList");
+        ul.innerHTML = "";
+        pharmacies.forEach((p) => {
+          const li = document.createElement("li");
+          li.innerHTML = `<strong>${escapeHtml(p.name)}</strong> — ${escapeHtml(
+            p.village
+          )} <div class="small muted">Inventory: ${Object.entries(p.inventory)
+            .map(([k, v]) => `${escapeHtml(k)}(${v})`)
+            .join(", ")}</div>`;
+          ul.appendChild(li);
+        });
+      }
+
+      // language switch
+      function applyLanguage(lang) {
+        const t = i18n[lang] || i18n.en;
+        $("appTitle").textContent = t.appTitle;
+        $("appTag").textContent = t.appTag;
+        $("lblName").textContent = t.name;
+        $("lblVillage").textContent = t.village;
+        $("lblSymptoms").textContent = t.symptoms;
+        $("checkBtn").textContent = t.checkSymptoms;
+        $("saveBtn").textContent = t.saveRecord;
+        $("videoBtn").textContent = t.startVideo;
+        $("medSearch").placeholder = t.searchMed;
+        $("checkMedBtn").textContent = t.checkMed;
+        $("ehrTitle").textContent = t.records;
+        $("videoTitle").textContent = t.startVideo;
+        $("statusBox").textContent = t.statusIdle;
+      }
+
+      // ----------------------------
+      // Event handlers
+      // ----------------------------
+      window.addEventListener("DOMContentLoaded", () => {
+        renderPharmList();
+        renderRecords();
+        applyLanguage("en");
+        setStatus("Idle");
+
+        $("lang").addEventListener("change", (e) =>
+          applyLanguage(e.target.value)
+        );
+
+        $("checkBtn").addEventListener("click", async () => {
+          const symptoms = $("symptoms").value.trim();
+          try {
+            const res = await checkSymptomsAsync(symptoms);
+            // store summary inside form state for saving later
+            $("resultArea").dataset.lastAnalysis = JSON.stringify(res);
+          } catch (err) {
+            // nothing additional; UI already shows error
+          }
+        });
+
+        $("checkMedBtn").addEventListener("click", async () => {
+          const med = $("medSearch").value.trim();
+          try {
+            await checkMedicineAsync(med);
+          } catch (err) {}
+        });
+
+        $("saveBtn").addEventListener("click", () => {
+          const name = $("patientName").value.trim() || "Anonymous";
+          const village = $("village").value.trim();
+          const symptoms = $("symptoms").value.trim();
+          const analysis = (() => {
+            try {
+              return JSON.parse($("resultArea").dataset.lastAnalysis || "null");
+            } catch (e) {
+              return null;
+            }
+          })();
+
+          const summary =
+            analysis && analysis.analysis
+              ? analysis.analysis
+                  .map((a) => `${a.symptom}:${a.condition}`)
+                  .join("; ")
+              : "";
+
+          const rec = {
+            name,
+            village,
+            symptoms,
+            analysisSummary: summary,
+            analysisRaw: analysis,
+            time: new Date().toISOString(),
+          };
+          addRecord(rec);
+          setStatus("Record saved", "success");
+        });
+
+        $("exportBtn").addEventListener("click", () => exportRecords());
+        $("clearBtn").addEventListener("click", () => {
+          if (confirm("Clear all saved records?")) clearRecords();
+        });
+
+        // video modal behavior
+        $("videoBtn").addEventListener("click", () => {
+          $("videoModal").classList.add("show");
+          $("videoModal").setAttribute("aria-hidden", "false");
+          $("videoFake").textContent =
+            i18n[$("lang").value].connecting || "Connecting...";
+          setStatus("Starting video call...");
+          // simulate connecting then "in call"
+          setTimeout(() => {
+            $("videoFake").textContent =
+              "Dr. Singh (Demo) — In call (simulated)";
+            setStatus("In video call (simulated)", "success");
+          }, 800);
+        });
+        $("endCall").addEventListener("click", () => {
+          $("videoModal").classList.remove("show");
+          $("videoModal").setAttribute("aria-hidden", "true");
+          setStatus("Video call ended");
+        });
+
+        // simple keyboard helper: Enter in medSearch triggers med check
+        $("medSearch").addEventListener("keydown", async (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            $("checkMedBtn").click();
+          }
+        });
+      });
+
+      // Prevent accidental form submission via Enter
+      window.addEventListener("keydown", function (e) {
+        if (
+          e.key === "Enter" &&
+          document.activeElement &&
+          document.activeElement.tagName !== "TEXTAREA"
+        ) {
+          // prevent page refresh on Enter
+          e.preventDefault();
+        }
+      });
+
+      // Expose a small API to console for testing
+      window.telemed = {
+        checkSymptomsAsync,
+        checkMedicineAsync,
+        loadRecords,
+        addRecord,
+      };
+    </script>
+  </body>
+</html>
